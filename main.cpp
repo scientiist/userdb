@@ -17,11 +17,11 @@ using json = nlohmann::json; // This header is 20k lines LOL
 
 #pragma region Utility Methods
 // Utility Methods
-std::string& string_toupper(std::string& input)
+void string_toupper(std::string& input)
 {
     std::transform(input.begin(), input.end(), input.begin(), ::toupper);
 }
-std::string& string_tolower(std::string& input)
+void string_tolower(std::string& input)
 {
     std::transform(input.begin(), input.end(), input.begin(), ::tolower);
 }
@@ -146,6 +146,10 @@ namespace UserDB
     }
 
     // Get Value in user entry
+    //json& Get(std::string userid, std::string key)
+    //{
+
+    //}
     int Get(std::string userid, std::string key)
     {
         json obj = GetJson(USERDB_FILE_NAME);
@@ -181,17 +185,17 @@ namespace UserDB
         }
         return 0;
     }
-    int FindValueInAnyUser(std::string value)
-    {
+     std::string FindValueInAnyUser(std::string value)
+     {
         json obj = GetJson(USERDB_FILE_NAME);
         for (auto& useracc: obj)
         {
             if (FindValue(useracc, value))
             {
-                std::cout << "Found in " << useracc["username"] << std::endl;
-                return 0;
+                return useracc["username"];
             }
         }
+        return "null";
     }
     int FindKeyInAnyUser(std::string key)
     {
@@ -296,8 +300,12 @@ typedef std::vector<std::string> ArgsList;
             return -1;
         }
         std::string key = args[0];
-        return FindValueInAnyUser(key);
-
+        std::string result = FindValueInAnyUser(key);
+        if (result != "null")
+        {
+            std::cout << result << std::endl;
+            return 1;
+        }
 
         return -1;
     }
