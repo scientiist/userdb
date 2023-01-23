@@ -344,17 +344,29 @@ typedef std::vector<std::string> ArgsList;
 
     }
 
+    bool Matches(std::string needle, std::vector<std::string> haystack)
+    {
+        for (int i = 0; i< haystack.size(); i++)
+        {
+            if (needle == haystack[i])
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
 #pragma endregion
     int ParseArgs(ArgsList args)
     {
         std::string command = args[0];
         args.erase(args.begin());
 
-        if (command == "help" || command == "-help" || command == "--help" || command == "h" || command == "-h")
+        if (Matches(command, {"help", "-help", "--help", "h", "-h"}))
         { return HelpCommand(args); }
-        if (command == "get" || command=="get_user_key")
+        if (Matches(command, {"get", "get_user_key"}))
         { return GetCommand(args);  }
-        if (command == "set" || command=="set_user_key")
+        if (Matches(command, {"set", "set_user_key"}))
         { return SetCommand(args);  }
         if (command == "remove_user")
         { return RemoveUserCommand(args); }
