@@ -1,11 +1,42 @@
-//=> UserDB
-// @auth Joshua "brogrammer" O'Leary
-// Copyright 2023 Conarium Software LLC All Rights Reserved
+/// UserDB v0.2 - A scuffed JSON database written in C++
+/// @auth Joshua "brogrammer" O'Leary
+/// @repo https://github.com/scientiist/userdb
+/// @url http://conarium.software
 
-//=> TODO LIST
+#pragma region License
+/* License (CSOFT-1)
+ * Copyright 2023 Conarium Software LLC
+ * Redistribution and use in source and binary forms,
+ * with or without modification,
+ * are permitted without condition.
+ * THIS SOFTWARE IS PROVIDED BY THE DEVELOPERS "AS-IS"
+ * NO WARRANTY IS EXPRESSED WHATSOEVER, AND THE DEVELOPER IS NOT
+ * LIABLE FOR ANY DAMAGES, ACCIDENTAL OR OTHERWISE.
+ * IN OTHER WORDS: USE AT YOUR OWN PERIL
+ */
+#pragma endregion
+#pragma region Documentation
+/*
+ *
+ */
+#pragma endregion
+#pragma region Compiling
+/* Compilation of this software should be very straightforward:
+ * Simply run the main.cpp file through gcc (or your compiler of choice)
+ * For example, on linux:
+ * g++ main.cpp -o userdb
+ */
+#pragma endregion
+#pragma region Todo List
+// TODO LIST
+// Refactor command "metadata" to not be spread across the source. I.e. Create Command Structs
+// Thoroughly Unit test each command
+//
+#pragma endregion
 
-//=>
 
+
+///~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #include <iostream>
 #include <fstream>
 #include <thread>
@@ -74,7 +105,32 @@ bool unlock()
 
 namespace UserDB
 {
-    const char*  defaultErrorMessage = "";
+
+    struct Command
+    {
+        std::string name;
+        std::vector<std::string> aliases;
+        std::string description;
+        std::string argsFormat;
+        int(*Callback)(std::vector<std::string>);
+    };
+
+    const Command Commands[] = {
+        {"help", {"-h", "h", "-help", "--h"}, "Help Command", "<command>"},
+        {""},
+    };
+    bool Matches(std::string needle, std::vector<std::string> haystack)
+    {
+        for (int i = 0; i< haystack.size(); i++)
+        {
+            if (needle == haystack[i])
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     const char* USERDB_FILE_NAME = "userdb.json";
 
     bool FindKey(const json& obj, const std::string key)
@@ -145,11 +201,6 @@ namespace UserDB
         of.close();
     }
 
-    // Get Value in user entry
-    //json& Get(std::string userid, std::string key)
-    //{
-
-    //}
     int Get(std::string userid, std::string key)
     {
         json obj = GetJson(USERDB_FILE_NAME);
@@ -209,26 +260,69 @@ namespace UserDB
             }
         }
     }
-    int RemoveUser(std::string userid)
+    std::string CheckInvite(std::string inviteCode)
     {
+        json obj = GetJson(USERDB_FILE_NAME);
 
+        for (auto& useracc: obj)
+        {
+            json invites = useracc["invites"];
+            if (invites.is_array())
+            {
+                for (auto& element: invites)
+                {
+                    if (element.is_string() && element == inviteCode)
+                        return useracc["username"];
+                }
+            }
+        }
+        return "null";
+    }
+    bool RemoveUser(std::string userid)
+    {
+        json obj = GetJson(USERDB_FILE_NAME);
+
+        if (obj.contains(userid))
+        {
+            obj.erase(userid);
+            return true;
+        }
+        return false;
     }
 
-    void HelpInfo(std::string command)
+    void HelpInfo(std::string commandID)
     {
+        for (auto& cmd: Commands)
+        {
+            if (cmd.name == commandID || Matches(commandID, cmd.aliases))
+            {
+                std::cout << "Cmd: " << commandID << std::endl;
+                std::cout << "Desc: " << cmd.description << std::endl;
+                std::cout << "Usage: userdb " << commandID << " " << cmd.argsFormat << std::endl;
+                return;
+            }
+        }
 
+        std::cout << "No such command " << commandID << " found!" << std::endl;
     }
 
     void HelpInfo()
     {
         std::cout << "UserDB by J. O'Leary" << std::endl;
         std::cout << "Usage: userdb <command> [arguments] [-flags]" << std::endl;
-
+        std::cout << "---------------------------------------------" << std::endl;
         std::cout << "Commands:" << std::endl;
         std::cout << "help|h|--h <command>" << std::endl;
-        std::cout << "get <userid> <key>" << std::endl;
-        std::cout << "set <userid> <key> <value>" << std::endl;
-        std::cout << "" << std::endl;
+        std::cout << "get|get_user_key <userid> <key>" << std::endl;
+        std::cout << "set|set_user_key <userid> <key> <value>" << std::endl;
+        std::cout << "dump <userid>" << std::endl;
+        std::cout << "search_k <key>" << std::endl;
+        std::cout << "search_v <value>" << std::endl;
+        std::cout << "add_user <userid> <json?>" << std::endl;
+        std::cout << "remove_user <userid>" << std::endl;
+        std::cout << "is_username_taken <username>" << std::endl;
+        std::cout << "checkinv <invitecode>" << std::endl;
+        std::cout << "useinv <invitecode>" << std::endl;
     }
 
 typedef std::vector<std::string> ArgsList;
@@ -239,6 +333,7 @@ typedef std::vector<std::string> ArgsList;
         if (args.size() > 0)
         {
             HelpInfo(args[0]);
+            return 0;
         }
 
         HelpInfo();
@@ -316,7 +411,14 @@ typedef std::vector<std::string> ArgsList;
             std::cout << "Usage: userdb remove <userid>" << std::endl;
             return -1;
         }
-        return RemoveUser(args[0]);
+        bool success = RemoveUser(args[0]);
+        if (success) {
+            std::cout << "true" << std::endl;
+            return 0;
+        } else {
+            std::cout << "false" << std::endl;
+            return 0;
+        }
     }
     int RemoveUserKeyCommand(ArgsList &args)
     {
@@ -330,10 +432,6 @@ typedef std::vector<std::string> ArgsList;
     {
 
     }
-    std::string CheckInvite(std::string inviteCode)
-    {
-
-    }
     int CheckInviteCommand(ArgsList &args)
     {
         std::cout << CheckInvite(args[0]) << std::endl;
@@ -344,17 +442,6 @@ typedef std::vector<std::string> ArgsList;
 
     }
 
-    bool Matches(std::string needle, std::vector<std::string> haystack)
-    {
-        for (int i = 0; i< haystack.size(); i++)
-        {
-            if (needle == haystack[i])
-            {
-                return true;
-            }
-        }
-        return false;
-    }
 
 #pragma endregion
     int ParseArgs(ArgsList args)
