@@ -33,14 +33,10 @@
 // Thoroughly Unit test each command
 //
 #pragma endregion
-
-
-
 ///~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #include <iostream>
 #include <fstream>
 #include <thread>
-#include <chrono>
 #include <algorithm>
 #include "json.h"
 
@@ -83,7 +79,8 @@ bool lock()
     std::ofstream locker(LOCKFILE_NAME);
     if (locker.is_open())
     {
-        locker << "true";
+
+        locker  << "true";
         locker.close();
         return true;
     }
@@ -119,7 +116,7 @@ namespace UserDB
         {"help", {"-h", "h", "-help", "--h"}, "Help Command", "<command>"},
         {""},
     };
-    bool Matches(std::string needle, std::vector<std::string> haystack)
+    bool Matches(const std::string& needle, std::vector<std::string> haystack)
     {
         for (int i = 0; i< haystack.size(); i++)
         {
@@ -133,16 +130,12 @@ namespace UserDB
 
     const char* USERDB_FILE_NAME = "userdb.json";
 
-    bool FindKey(const json& obj, const std::string key)
+    bool FindKey(const json& obj, const std::string& key)
     {
-        //std::cout << obj.type_name() << std::endl;
-
         for (auto& el: obj.items())
         {
-
             if (el.key() == key)
             {
-
                 return true;
             } else {
                 if (obj.type_name()!="string"&&obj.type_name()!="array")
@@ -161,7 +154,7 @@ namespace UserDB
         }
         return false;
     }
-    bool FindValue(const json& obj, const std::string key)
+    bool FindValue(const json& obj, const std::string& key)
     {
         //std::cout << obj.type_name() << std::endl;
 
@@ -189,19 +182,19 @@ namespace UserDB
         return false;
     }
 
-    json GetJson(std::string filename)
+    json GetJson(const std::string& filename)
     {
         std::fstream f(filename, std::ios_base::in | std::ios::binary);
         return json::parse(f);
     }
-    void SetJson(std::string filename, json data)
+    void SetJson(const std::string &filename, json& data)
     {
         std::ofstream of(filename); // TODO: Verify Params here
-        of << data; // re-write json object to file;
+        of << data.dump(4); // re-write json object to file;
         of.close();
     }
 
-    int Get(std::string userid, std::string key)
+    int Get(const std::string& userid, const std::string& key)
     {
         json obj = GetJson(USERDB_FILE_NAME);
         json b = obj[userid][key];
@@ -215,7 +208,7 @@ namespace UserDB
         return 0;
     }
     // Set value in user entry
-    int Set(std::string userid, std::string key, std::string json_literal)
+    int Set(const std::string& userid, const std::string& key, const std::string& json_literal)
     {
         json obj = GetJson(USERDB_FILE_NAME);
         obj[userid][key] = json_literal;
@@ -230,8 +223,10 @@ namespace UserDB
         std::cout << b << std::endl;
         if (b.is_array())
         {
-            for (auto& element: b)
-                std::cout << element << std::endl;
+            for (auto& element: b){
+                std::string rawText = element.dump();
+                std::cout << rawText << std::endl;
+            }
             return 0;
         }
         return 0;
@@ -320,6 +315,7 @@ namespace UserDB
         std::cout << "search_v <value>" << std::endl;
         std::cout << "add_user <userid> <json?>" << std::endl;
         std::cout << "remove_user <userid>" << std::endl;
+        std::cout << "remove_key <userid> <key>" << std::endl;
         std::cout << "is_username_taken <username>" << std::endl;
         std::cout << "checkinv <invitecode>" << std::endl;
         std::cout << "useinv <invitecode>" << std::endl;
@@ -422,11 +418,19 @@ typedef std::vector<std::string> ArgsList;
     }
     int RemoveUserKeyCommand(ArgsList &args)
     {
-
+        if (args.size() < 2)
+        {
+            std::cout << "Usage: userdb remove_key <userid>" << std::endl;
+            return -1;
+        }
     }
     int AddUserCommand(ArgsList &args)
     {
-
+        if (args.size() < 1)
+        {
+            std::cout << "Usage: userdb add_user" << std::endl;
+            return -1;
+        }
     }
     int IsUsernameTakenCommand(ArgsList &args)
     {
@@ -439,6 +443,16 @@ typedef std::vector<std::string> ArgsList;
     int UseInviteCommand(ArgsList &args)
     {
         std::string userid = CheckInvite(args[0]);
+    }
+    int CountInstancesCommand(ArgsList &args)
+    {
+        if (args.size() < 1)
+        {
+            std::cout << "BAH" << std::endl;
+            return 0;
+        }
+        std::string keyword = args[0];
+
 
     }
 
