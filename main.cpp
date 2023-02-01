@@ -1,4 +1,3 @@
-
 /// UserDB v0.2 - A scuffed JSON database written in C++
 /// @auth Joshua "brogrammer" O'Leary
 /// @repo https://github.com/scientiist/userdb
@@ -102,7 +101,7 @@ namespace UserDB {
 
     struct Command;
 
-    Command &getCmdRef(std::string);
+    Command& getCommand(std::string&);
 
     bool hasCommand(std::string& command);
 
@@ -166,10 +165,12 @@ namespace UserDB {
     std::string Get(const std::string &userid, const std::string &key) {
         json obj = GetJson(USERDB_FILE_NAME);
         json b = obj[userid][key];
-        std::string ret = b.dump();
+        std::string ret;
         if (b.is_array())
             for (auto &element: b)
                 ret += element.dump() + " ";
+        else
+            ret = b.dump();
         return ret;
     }
 
@@ -275,7 +276,7 @@ namespace UserDB {
 
     void HelpInfo(std::string commandID) {
         if (hasCommand(commandID)) {
-            Command cmd = getCmdRef(commandID);
+            Command cmd = getCommand(commandID);
             std::cout << "Cmd: " << commandID << std::endl;
             std::cout << "Desc: " << cmd.description << std::endl;
             std::cout << "Usage: userdb " << commandID << " " << cmd.argsFormat << std::endl;
@@ -417,8 +418,6 @@ namespace UserDB {
 
     int UseInviteCommand(ArgsList &args) {
         std::string userid = CheckInvite(args[0]);
-
-
         return 0;
     }
 
@@ -428,13 +427,21 @@ namespace UserDB {
             return 0;
         }
         std::string keyword = args[0];
+    }
 
+    int AddCommand(ArgsList &args)
+    {
+        if (args.empty())
+        {
+
+        }
     }
 
     std::vector<Command> Commands = {
             {"help",              {"-h"}, "Help Command", "<command>",      HelpCommand},
             {"get",               {"get_user_key"},            "Retrieves a user value.",  "<userid> <key>", GetCommand},
             {"set",               {"set_user_key"},            "Stores a user value.",     "<userid> <key>", SetCommand},
+            {"add", {}, "Adds an entry to a user-array specifically.", "<userid> <key> <insert>", AddCommand},
             {"remove_user",       {}, "Removes a user entry from the database.", "<userid>", RemoveUserCommand},
             {"remove_user_key",   {}, "Removes a key from a user entry.", "<userid> <key>", RemoveUserKeyCommand},
             {"add_user",          {}, "Add a user entry to the database.",  "<userid>", AddUserCommand},
@@ -456,8 +463,23 @@ namespace UserDB {
     }
 
 
+    class InvalidCommandException {
+    public:
+        std::string InvalidCommand;
+        InvalidCommandException(std::string command)
+        {
+            this->InvalidCommand = command;
+        }
+    };
 
+    Command& getCommand(std::string& key) {
+        for (auto &cmd: Commands)
+            if (cmd.name == key || Matches(key, cmd.aliases))
+                return cmd;
+        throw InvalidCommandException(key);
+    }
     std::vector<Command> &getCommands() { return Commands; }
+
 
 
 #pragma endregion
@@ -493,7 +515,6 @@ namespace UserDB {
 void erase(std::string &str, char charToRemove) {
     str.erase(remove(str.begin(), str.end(), charToRemove), str.end());
 }
-
 
 #define EXPLODE_IF_LOCKED false
 
