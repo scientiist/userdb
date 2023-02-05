@@ -225,6 +225,16 @@ namespace UserDB {
         }
     }
 
+    bool IsUserIDTaken(std::string& userid)
+    {
+
+        json obj = GetJson(USERDB_FILE_NAME);
+
+        if (obj.contains(userid))
+            return true;
+        return false;
+    }
+
     std::string CheckInvite(std::string& inviteCode) {
         json obj = GetJson(USERDB_FILE_NAME);
 
@@ -407,6 +417,9 @@ namespace UserDB {
             return -1;
         }
 
+        std::string result = IsUserIDTaken(args[0]) ? "true" : "false";
+
+        std::cout << result << std::endl;
 
         return 0;
     }
